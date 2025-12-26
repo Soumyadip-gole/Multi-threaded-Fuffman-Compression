@@ -46,7 +46,6 @@ criterion/
 *.iml
 *.iws
 *.ipr
-out/
 .idea_modules/
 
 # Visual Studio Code
@@ -84,7 +83,6 @@ tramp
 # NetBeans
 nbproject/
 nbbuild/
-dist/
 nbdist/
 
 # ============================================
@@ -135,7 +133,7 @@ $RECYCLE.BIN/
 # ============================================
 
 # Generated documentation
-doc/
+# (target/doc/ is already covered by target/)
 
 # Test artifacts
 *.test
