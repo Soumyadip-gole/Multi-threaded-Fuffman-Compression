@@ -197,10 +197,10 @@ TAGS
 # ctags
 .ctags
 
-# Node modules (if any JS tooling is added)
+# Node modules (in case JS tooling/scripts are added in the future)
 node_modules/
 
-# Python (if any Python scripts are added)
+# Python virtual environments and cache (in case Python scripts are added in the future)
 __pycache__/
 *.py[cod]
 *$py.class
