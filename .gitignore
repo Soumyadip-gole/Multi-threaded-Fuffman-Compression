@@ -34,7 +34,6 @@ perf.data.old
 
 # Flamegraph
 flamegraph.svg
-perf.data
 
 # Benchmarking results
 criterion/
@@ -59,14 +58,12 @@ out/
 # Vim
 *.swp
 *.swo
-*~
 .*.swp
 .*.swo
 Session.vim
 .vim/
 
 # Emacs
-*~
 \#*\#
 .\#*
 *.elc
@@ -150,7 +147,6 @@ test-results/
 *.gcov
 
 # Coverage reports
-*.profdata
 coverage/
 tarpaulin-report.html
 cobertura.xml
@@ -177,8 +173,9 @@ fuzz/corpus/
 *.backup
 *~
 
-# Lock files (except Cargo.lock which we may want)
-*.lock
+# Lock files (except Cargo.lock which we want to track for this application)
+# *.lock would exclude Cargo.lock, so we don't use it
+# Instead, be specific about other lock files if needed
 
 # ============================================
 # Project-specific
