@@ -64,8 +64,8 @@ Session.vim
 .vim/
 
 # Emacs
-\#*\#
-.\#*
+#*#
+.#*
 *.elc
 auto-save-list
 tramp
@@ -172,10 +172,6 @@ fuzz/corpus/
 # Backup files
 *.backup
 *~
-
-# Lock files (except Cargo.lock which we want to track for this application)
-# *.lock would exclude Cargo.lock, so we don't use it
-# Instead, be specific about other lock files if needed
 
 # ============================================
 # Project-specific
