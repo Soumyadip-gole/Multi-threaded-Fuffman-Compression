@@ -1,255 +1,115 @@
 # 🗜️ Parallel Huffman Compressor (Rust)
 
-A **multi-threaded file compressor and decompressor** written in Rust, implementing **Huffman encoding/decoding** and a **custom thread pool** to process multiple files in parallel. ( Trying to do the treadpool currently single file - single thread :) 
----
+A **multi-threaded file compressor and decompressor** written in Rust, implementing **Huffman encoding/decoding** and a **custom thread pool** to process multiple files in parallel. 
 
-## ✨ Features
-
-* ✅ **Huffman Encoding & Decoding**
-
-  * Byte-frequency analysis
-  * Huffman tree construction
-  * Bit-level encoding and decoding
-  * Lossless round-trip verification
-
-* 🧵 **Custom Thread Pool**  (to be done)
-
-  * Fixed-size worker pool
-  * Threads are spawned once and reused
-  * Workers wait for tasks instead of exiting
-  * Controlled concurrency (no thread explosion)
-
-* ⚡ **Parallel File Processing**  (to be done)
-
-  * One file = one task
-  * Multiple files compressed / decompressed concurrently
-  * Scales with available CPU cores
-
-* 📊 **Performance-Oriented**   (to be done)
-
-  * CPU-bound workload
-  * Benchmarkable against single-threaded execution
+( Trying to do the treadpool currently single file - single thread :) 
 
 ---
+## Working
 
+This project has two modes:
 
-### Parallelism Model (expected)
+### 1) Encode (compress)
+1. `main.rs` loads `config.toml` and asks you to choose **encode** or **decode**.
+2. In **encode** mode, it calls `compress::write_compressed(&config)`.
+3. `file_io::read(&config)` reads the input text file from:
+   - `encode_input_dir/input.txt`
+4. `encoder::encode(&config)`:
+   - counts character frequencies,
+   - builds a Huffman tree using a min-heap,
+   - generates a Huffman encoding table (character -> bitstring).
+5. `compress::write_compressed(&config)` writes a binary output file to:
+   - `encoded_output_dir/output.bin`
 
-```
-Main Thread
- ├── submit file1
- ├── submit file2
- ├── submit file3
+The binary format is:
+- number of table entries (u32)
+- for each entry: key length (u8), key bytes, code length (u8), code bytes
+- original symbol count (u64)
+- encoded bitstream packed into bytes
 
-Thread Pool (N workers)
- ├── Worker 1 → Huffman(file1)
- ├── Worker 2 → Huffman(file2)
- ├── Worker 3 → Huffman(file3)
- └── Worker 4 → waiting
-```
+It also writes a debug file to:
+- `encoded_output_dir/output_debug.bin` (human-readable info like table + bitstream)
 
-* No shared mutable state between tasks
-* No locking during compression work
-* Safe and predictable parallelism
-
----
-
-## 🗂️ Project Structure (undecided)
-
-```
-src/
- ├── huffman/
- │   ├── frequency.rs    # Frequency table
- │   ├── tree.rs         # Huffman tree
- │   ├── encode.rs       # Encoding logic
- │   └── decode.rs       # Decoding logic
- │
- ├── thread_pool/
- │   ├── mod.rs
- │   └── pool.rs         # Custom thread pool
- │
- ├── cli.rs              # Argument parsing
- └── main.rs             # Entry point
-```
+### 2) Decode (decompress)
+1. In **decode** mode, `main.rs` calls `expand::write_expanded(&config)`.
+2. `decoder::decode(&config)` reads the encoded binary from:
+   - `decode_input_dir/input.bin`
+3. `decoder.rs` reconstructs the Huffman table (bitstring -> character).
+4. `expand.rs` reads the original symbol count + bitstream, then walks bits until the symbol count is reached.
+5. The final decoded text is written to:
+   - `decoded_output_dir/output.txt`
 
 ---
+## File Structure
 
-## 🚀 Usage (undecided)
+### Root
+- `Cargo.toml` / `Cargo.lock`: Rust package metadata + dependencies
+- `config.toml`: where input/output folders are configured
+- `README.md`: project description (this file)
+- `LICENSE`: license info
 
-### Compress files
+### Input / Output folders
+- `to_encode/`
+  - `input.txt` (text file you want to compress)
+- `encoded_output/`
+  - `output.bin` (compressed binary output)
+  - `output_debug.bin` (debug info about the encoding)
+- `to_decode/`
+  - `input.bin` (binary file you want to decompress; often copied from `encoded_output/output.bin`)
+- `decoded_output/`
+  - `output.txt` (final decompressed text)
 
-```bash
-cargo run -- compress input_dir/ output_dir/
-```
-
-### Decompress files
-
-```bash
-cargo run -- decompress input_dir/ output_dir/
-```
-
-Each file is processed independently and may be handled by a different worker thread.
-
----
-
-## 📈 Performance Notes
-
-* Parallel speedup depends on:
-
-  * number of CPU cores
-  * number of input files
-  * file sizes
-
-* Huffman tree construction is sequential **per file**, but **files are processed in parallel**.
-
-This mirrors how many real-world compressors parallelize work at the **job level**, not inside the core algorithm.
+### Source code (`src/`)
+- `main.rs`: CLI entry point; loads config and dispatches to encode/decode
+- `config.rs`: reads `config.toml` into a `Config` struct
+- `file_io.rs`: reads input files (text/binary) using config directory paths
+- `encoder.rs`: builds frequency map, Huffman tree, and encoding table
+- `compress.rs`: writes encoding table + encoded content into the compressed binary format
+- `decoder.rs`: reads the binary format and reconstructs the decoding table
+- `expand.rs`: expands the encoded bitstream back into the original text
+- `sturcture.rs`: defines the Huffman tree `Node` and heap ordering
 
 ---
+## Usage
 
-## ⚠️ Limitations
+### 1) Configure paths
+Edit `config.toml` to point to your folders:
+- `encode_input_dir` (contains `input.txt`)
+- `encoded_output_dir` (where `output.bin` and `output_debug.bin` will be written)
+- `decode_input_dir` (contains `input.bin`)
+- `decoded_output_dir` (where `output.txt` will be written)
 
-* Huffman-only compression (no dictionary-based compression)
-* Not designed to beat tools like 7-Zip or WinRAR
-* Optimized for learning and correctness, not maximum compression ratio
+Note: the code currently expects these fixed filenames:
+- encode input: `input.txt`
+- decode input: `input.bin`
+
+### 2) Encode (compress)
+1. Put your text file at: `to_encode/input.txt` (or whatever `encode_input_dir` is set to).
+2. Run the program.
+3. When prompted, type `encode`.
+4. Outputs:
+   - `encoded_output/output.bin` (compressed data)
+   - `encoded_output/output_debug.bin` (debug info)
+
+### 3) Decode (decompress)
+1. Copy/move `encoded_output/output.bin` to `to_decode/input.bin` (or whatever `decode_input_dir` is set to).
+2. Run the program.
+3. When prompted, type `decode`.
+4. Output:
+   - `decoded_output/output.txt` (decompressed text)
+
+---
+## Stats
+
+### Encoding 
+- Input text size: ~100 mb
+- Encoded binary size: ~75 mb
+- Compression ratio: ~25%
+- encoding time : ~103.890139684s (pc on medium load + lot of debugging info written + extra debugging file )
 
 ---
 
-## 🎯 Learning Outcomes
+This project was built mainly to learn Rust, so it’s not meant to compete with tools like gzip or zlib.
+It hasn’t been optimized for speed or compression ratio—it's just a Huffman coding implementation in Rust.
 
-This project demonstrates:
-
-* Safe concurrency in Rust
-* Thread pool design
-* CPU-bound parallel task execution
-* Bit-level data processing
-* Clear separation of concerns
-
----
-
-## 🧩 Future Improvements (Optional)
-
-* Block-level compression for large files
-* Progress reporting using atomics
-* Benchmark harness
-* Panic recovery in worker threads
-
----
-
-## 📌 Final Note
-
-> This project is not about inventing new compression algorithms —
-> it is about **understanding and implementing real systems concepts correctly**.
-
----
-
-## 🐞 Debugging: `output.bin` binary layout
-
-When you run compression (`write_compressed()` in `src/compress.rs`), the program writes a binary file to `./to_decode/output.bin`.
-
-This section documents the exact byte layout so you can inspect the file with a hex viewer or write your own decoder.
-
-### Endianness
-
-* All multi-byte integers are **big-endian** (network byte order) because the code uses `to_be_bytes()`.
-
-### File format (in order)
-
-1) **Encoding table length**
-
-* **32 bits (4 bytes)**: `N` = number of Huffman table entries (`u32`, big-endian)
-
-2) **Encoding table entries** (repeated `N` times)
-
-For each entry:
-
-* **8 bits (1 byte)**: `K` = key length in bytes (`u8`)
-* **K bytes**: key bytes (currently written as UTF-8 bytes from `String::as_bytes()`)
-* **8 bits (1 byte)**: `V` = code length in bytes (`u8`)
-* **V bytes**: code bytes (ASCII `'0'`/`'1'` characters; this is a *debug-friendly* representation)
-
-Notes:
-
-* In the current implementation the table key is a `String` created via `ch.to_string()`. For normal text this is typically a single UTF-8 character, but the format supports longer UTF-8 sequences because we store `K` + raw bytes.
-* The code length is stored in **bytes**, not bits. Since the code is written as a string of `'0'`/`'1'`, bytes == bits count.
-
-3) **Original symbol count**
-
-* **64 bits (8 bytes)**: `original_len` = number of Unicode scalar values (`input.chars().count() as u64`, big-endian)
-
-This is used by decoding to know when to stop emitting symbols (because the final byte of the bitstream may contain padding).
-
-4) **Encoded bitstream**
-
-* Remaining bytes until EOF are the compressed data bits, packed into bytes.
-
-Packing rule used by the current encoder:
-
-* Bits are processed left-to-right.
-* For each bit, the buffer is shifted left by 1 and the bit is OR’d in.
-* Every 8 bits, one byte is written.
-* If there are leftover bits at the end, the last byte is left-shifted to fill to 8 bits and written once.
-
-In other words:
-
-* The **first encoded bit becomes the most-significant bit** of the first byte.
-* The final byte may include **zero padding** in the least significant bits.
-
-### Debug sidecar file
-
-For human-readable inspection, compression also writes `./to_decode/output_debug.bin` (despite the `.bin` extension, it’s plain text) containing:
-
-* the Huffman table
-* the original symbol count
-* the full encoded bitstream as a `0/1` string
-
-### Worked example
-
-Assume the input file contains:
-
-* `test`
-
-And the generated Huffman table (example) is:
-
-* `t` → `0`
-* `s` → `10`
-* `e` → `11`
-
-The beginning of `output.bin` may look like this:
-
-```bash
-$ hexdump -C output.bin | head
-00000000  00 00 00 03 01 73 02 31  30 01 65 02 31 31 01 74  |.....s.10.e.11.t|
-00000010  01 30 00 00 00 00 00 00  00 04 ...
-```
-
-How to read that dump:
-
-* `00 00 00 03` → `N = 3` table entries (`u32` big-endian)
-
-Then each entry is `K (1 byte) + key (K bytes) + V (1 byte) + value (V bytes)`:
-
-* `01 73 02 31 30`
-  * `01` → `K = 1`
-  * `73` → key = `"s"` (ASCII `0x73`)
-  * `02` → `V = 2`
-  * `31 30` → value = `"10"` (ASCII `0x31 0x30`)
-
-* `01 65 02 31 31`
-  * `01` → `K = 1`
-  * `65` → key = `"e"`
-  * `02` → `V = 2`
-  * `31 31` → value = `"11"`
-
-* `01 74 01 30`
-  * `01` → `K = 1`
-  * `74` → key = `"t"`
-  * `01` → `V = 1`
-  * `30` → value = `"0"`
-
-Immediately after the table comes the original symbol count:
-
-* next **8 bytes** → `original_len` (`u64` big-endian). For input `test`, this value is `4`.
-
-After that, the remainder of the file is the packed encoded bitstream.
-
-> Note: the **order of table entries in the hexdump is not guaranteed**, because Rust’s `HashMap` iteration order is randomized. The example above is just one possible ordering.
+Feel free to explore, modify, and experiment with the code!

@@ -1,6 +1,8 @@
 use crate::compress::write_compressed;
 use crate::expand::write_expanded;
 use std::io;
+use std::time::Instant;
+
 
 mod compress;
 mod config;
@@ -30,7 +32,7 @@ fn main() {
     };
 
     println!("Selected mode: {}", mode);
-
+    let start = Instant::now();
     if mode == "encode" {
         println!("Starting compression...");
         write_compressed(&config);
@@ -38,4 +40,7 @@ fn main() {
         println!("Starting decompression...");
         write_expanded(&config);
     }
+
+    let duration = start.elapsed();
+    println!("Time taken: {:?}", duration);
 }
