@@ -13,7 +13,7 @@ pub fn encode() ->Option<HashMap<String,String>> {
                 let node=Node::leaf(key.to_string(),value);
                 min_heap.push(Reverse(node));
             }
-            //println!(" min heap: {:?}", min_heap);
+            ////println!(" min heap: {:?}", min_heap);
             while min_heap.len() > 1 {
                 let min1 :Node= min_heap.pop().unwrap().0;
                 let min2 = min_heap.pop().unwrap().0;
@@ -21,14 +21,14 @@ pub fn encode() ->Option<HashMap<String,String>> {
                 min_heap.push(Reverse(merged));
             }
             let huffman_tree = min_heap.pop().unwrap().0;
-            //println!("Huffman Tree: {:?}", huffman_tree);
+            ////println!("Huffman Tree: {:?}", huffman_tree);
             let mut res:HashMap<String,String> = HashMap::new();
             get_encoding(&huffman_tree, String::new() ,& mut res);
-            //println!("\n\n\n\n\n Huffman Encoding Table: {:?}", res);
+            ////println!("\n\n\n\n\n Huffman Encoding Table: {:?}", res);
             return Some(res);
         }
         None => {
-            println!("No Content");
+            //println!("No Content");
             return None;
         }
     }
@@ -40,7 +40,7 @@ pub fn count_freq(content:&String) -> HashMap<char, u128>{
     for character in content.chars() {
         *count.entry(character).or_insert(0) += 1;
     }
-    println!("{:?}", count);
+    //println!("{:?}", count);
     count
 }
 

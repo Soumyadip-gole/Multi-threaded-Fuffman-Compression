@@ -3,5 +3,14 @@
 version = 4
 
 [[package]]
+name = "file"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a5ba9503d61b709353a5f71ea997af9a67489c31036aaed5b579fd14d8d465c"
+
+[[package]]
 name = "huffman-encoding"
 version = "0.1.0"
+dependencies = [
+ "file",
+]

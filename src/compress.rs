@@ -8,7 +8,7 @@ pub fn write_compressed() {
 
     match encoding_table {
         Some(encoding_table) => {
-            let file = File::create("./to_decode/output.bin").unwrap();
+            let file = File::create("./to_decode/compressed.bin").unwrap();
             let file_test=File::create("./to_decode/output_debug.bin").unwrap();
             let mut writer = BufWriter::new(file);
 
@@ -46,7 +46,7 @@ pub fn write_compressed() {
                 debug_writer,
                 "\nOriginal symbol count: {}\n",
                 original_len
-            ).unwrap();
+            ).unwrap(); // Original Length in 8 bytes
 
             // ---------- WRITE ENCODED BITSTREAM ----------
             writeln!(debug_writer, "Encoded bitstream:").unwrap();
@@ -88,11 +88,14 @@ pub fn write_compressed() {
             // ---------- WRITE ENCODED BITSTREAM ----------
             let mut buffer: u8 = 0;
             let mut count: u8 = 0;
+            //println!("{}",input);
+            //println!("Starting compression...");
 
             for ch in input.chars() {
                 let code = &encoding_table[&ch.to_string()];
 
                 for bit in code.chars() {
+                    //println!("{}",bit);
                     buffer <<= 1;
                     if bit == '1' {
                         buffer |= 1;
@@ -114,11 +117,11 @@ pub fn write_compressed() {
             }
 
             writer.flush().unwrap();
-            println!("Compression complete: output.bin written");
+            //println!("Compression complete: output.bin written");
         }
 
         None => {
-            println!("No Encoding Table Generated");
+            //println!("No Encoding Table Generated");
         }
     }
 }
