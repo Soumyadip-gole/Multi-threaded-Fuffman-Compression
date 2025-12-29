@@ -1,9 +1,6 @@
 # 🗜️ Parallel Huffman Compressor (Rust)
 
-A **multi-threaded file compressor and decompressor** written in Rust, implementing **Huffman encoding/decoding** and a **custom thread pool** to process multiple files in parallel.
-
-This project focuses on **systems fundamentals**: concurrency, task scheduling, and CPU-bound parallelism — not on inventing a new compression algorithm.
-
+A **multi-threaded file compressor and decompressor** written in Rust, implementing **Huffman encoding/decoding** and a **custom thread pool** to process multiple files in parallel. ( Trying to do the treadpool currently single file - single thread :) 
 ---
 
 ## ✨ Features
