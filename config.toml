@@ -1,0 +1,11 @@
+# directory which contains the input files to be encoded
+encode_input_dir = "to_encode"
+
+# directory where the encoded output files will be saved
+encoded_output_dir = "encoded_output"
+
+# directory which contains the input files to be decoded
+decode_input_dir = "to_decode"
+
+# directory where the decoded output files will be saved
+decoded_output_dir = "decoded_output"

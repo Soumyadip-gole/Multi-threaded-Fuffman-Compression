@@ -121,7 +121,7 @@ pub fn write_compressed() {
         }
 
         None => {
-            //println!("No Encoding Table Generated");
+            eprintln!("No encoding table generated (input may be missing or empty).");
         }
     }
 }

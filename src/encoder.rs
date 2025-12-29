@@ -1,7 +1,7 @@
 use crate::file_io::read;
 use std::collections::HashMap;
 use std::collections::BinaryHeap;
-use std::cmp::{min, Reverse};
+use std::cmp::Reverse;
 use crate::sturcture::Node;
 pub fn encode() ->Option<HashMap<String,String>> {
     let content:Option<String> = read();
@@ -28,7 +28,7 @@ pub fn encode() ->Option<HashMap<String,String>> {
             return Some(res);
         }
         None => {
-            //println!("No Content");
+            eprintln!("No content to encode (failed to read ./to_encode/test.txt).");
             return None;
         }
     }
@@ -46,7 +46,7 @@ pub fn count_freq(content:&String) -> HashMap<char, u128>{
 
 
 fn get_encoding(node:&Node, code:String, table: &mut HashMap<String, String>){
-    if(node.is_leaf()){
+    if node.is_leaf(){
         table.insert(node.token(), code.clone());
     }
     let left = node.left();

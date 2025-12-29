@@ -8,7 +8,7 @@ pub fn read()->Option<String>{
             Some(contents)
         }
         Err(e) => {
-            //println!("Error reading file:  \n {:?}", e);
+            eprintln!("Error reading file ./to_encode/test.txt:\n{:?}", e);
             None
         }
     }
@@ -22,7 +22,7 @@ pub fn read_binary()->Option<Vec<u8>>{
             Some(contents)
         }
         Err(e) => {
-            //println!("Error reading file:  \n {:?}", e);
+            eprintln!("Error reading file ./to_decode/output.bin:\n{:?}", e);
             None
         }
     }

@@ -1,5 +1,4 @@
 use crate::decoder::decode;
-use crate::file_io::read_binary;
 
 pub(crate) fn write_expanded(){
     let data = decode();
@@ -17,7 +16,7 @@ pub(crate) fn write_expanded(){
             let mut i: u64 = 0;
             for byte in vec{
                 for j in [7,6,5,4,3,2,1,0]{
-                    if(i>=len){
+                    if i>=len{
                         break;
                     }
                     let bit = (byte >> j) & 1;
@@ -27,7 +26,7 @@ pub(crate) fn write_expanded(){
                     }else{
                         bit_string.push('0');
                     }
-                    if(mapping.contains_key(&bit_string)){
+                    if mapping.contains_key(&bit_string) {
                         //println!("{}", mapping[&bit_string]);
                         text.push(mapping.get(&bit_string).unwrap().parse().unwrap());
                         bit_string.clear();
@@ -35,10 +34,12 @@ pub(crate) fn write_expanded(){
                     }
                 }
             }
-            let _result = std::fs::write("./to_encode/expanded.txt", text);
+            if let Err(e) = std::fs::write("./to_encode/expanded.txt", text) {
+                eprintln!("Error writing expanded output to ./to_encode/expanded.txt:\n{:?}", e);
+            }
         }
         None=>{
-            //println!("Failed to decode Huffman mapping.");
+            eprintln!("Failed to decode Huffman mapping.");
         }
     }
 }
