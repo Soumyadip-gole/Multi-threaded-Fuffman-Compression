@@ -1,29 +1,36 @@
+use crate::config::Config;
 use crate::encoder::encode;
-use std::fs::File;
-use std::io::{Write, BufWriter};
 use crate::file_io::read;
+use std::fs::File;
+use std::io::{BufWriter, Write};
 
-pub fn write_compressed() {
-    let encoding_table = encode();
+pub fn write_compressed(config: &Config) {
+    let encoding_table = encode(config);
 
     match encoding_table {
         Some(encoding_table) => {
-            let file = File::create("./to_decode/compressed.bin").unwrap();
-            let file_test=File::create("./to_decode/output_debug.bin").unwrap();
+            println!("Encoding table: \n{:#?}", encoding_table);
+            std::fs::create_dir_all(&config.encoded_output_dir).ok();
+            let compressed_path = config.encoded_output_dir.join("output.bin");
+            let debug_path = config.encoded_output_dir.join("output_debug.bin");
+
+            let file = File::create(&compressed_path).unwrap();
+            let file_test = File::create(&debug_path).unwrap();
             let mut writer = BufWriter::new(file);
 
-            // ---------- DEBUGGING PURPOSES ONLY ----------
+            //  DEBUGGING PURPOSES ONLY 
+            println!("writing debug file");
             let mut debug_writer = BufWriter::new(file_test);
 
             writeln!(debug_writer, "Huffman Debug Output").unwrap();
-            writeln!(debug_writer, "-------------------").unwrap();
 
-            // ---------- WRITE HUFFMAN TABLE ----------
+            //  WRITE HUFFMAN TABLE 
             writeln!(
                 debug_writer,
                 "Number of entries: {}\n",
                 encoding_table.len()
-            ).unwrap();
+            )
+            .unwrap();
 
             writeln!(debug_writer, "Huffman Table:").unwrap();
 
@@ -35,20 +42,17 @@ pub fn write_compressed() {
                     key.len(),
                     value,
                     value.len()
-                ).unwrap();
+                )
+                .unwrap();
             }
 
-            // ---------- WRITE ORIGINAL SYMBOL COUNT ----------
-            let input = read().unwrap();
+            //  WRITE ORIGINAL SYMBOL COUNT 
+            let input = read(config).unwrap();
             let original_len = input.chars().count();
 
-            writeln!(
-                debug_writer,
-                "\nOriginal symbol count: {}\n",
-                original_len
-            ).unwrap(); // Original Length in 8 bytes
+            writeln!(debug_writer, "\nOriginal symbol count: {}\n", original_len).unwrap(); // Original Length in 8 bytes
 
-            // ---------- WRITE ENCODED BITSTREAM ----------
+            //  WRITE ENCODED BITSTREAM 
             writeln!(debug_writer, "Encoded bitstream:").unwrap();
 
             let mut bitstream = String::new();
@@ -62,11 +66,9 @@ pub fn write_compressed() {
 
             debug_writer.flush().unwrap();
 
-
             //Actual Writing to binary file
-
-
-            // ---------- WRITE HUFFMAN TABLE ----------
+            println!("writing binary file");
+            //  WRITE HUFFMAN TABLE 
             let no_of_entries = encoding_table.len() as u32;
             writer.write_all(&no_of_entries.to_be_bytes()).unwrap();
 
@@ -80,12 +82,12 @@ pub fn write_compressed() {
                 writer.write_all(value_bytes).unwrap();
             }
 
-            // ---------- WRITE ORIGINAL SYMBOL COUNT ----------
-            let input = read().unwrap();
+            //  WRITE ORIGINAL SYMBOL COUNT 
+            let input = read(config).unwrap();
             let original_len = input.chars().count() as u64;
             writer.write_all(&original_len.to_be_bytes()).unwrap();
 
-            // ---------- WRITE ENCODED BITSTREAM ----------
+            //  WRITE ENCODED BITSTREAM 
             let mut buffer: u8 = 0;
             let mut count: u8 = 0;
             //println!("{}",input);
@@ -110,7 +112,7 @@ pub fn write_compressed() {
                 }
             }
 
-            // ---------- FINAL FLUSH (ONLY ONCE) ----------
+            //  FINAL FLUSH (ONLY ONCE) 
             if count > 0 {
                 buffer <<= 8 - count;
                 writer.write_all(&[buffer]).unwrap();

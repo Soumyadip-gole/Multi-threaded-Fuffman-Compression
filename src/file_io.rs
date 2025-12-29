@@ -1,28 +1,31 @@
+use crate::config::Config;
 use std::fs;
 
-pub fn read()->Option<String>{
-    let contents = fs::read_to_string("./to_encode/test.txt");
+pub fn read(config: &Config) -> Option<String> {
+    let path = config.encode_input_dir.join("input.txt");
+    let contents = fs::read_to_string(&path);
+    println!("Reading file");
     match contents {
         Ok(contents) => {
-            //println!("{}", contents);
             Some(contents)
         }
         Err(e) => {
-            eprintln!("Error reading file ./to_encode/test.txt:\n{:?}", e);
+            eprintln!("Error reading file {}:\n{:?}", path.display(), e);
             None
         }
     }
 }
 
-pub fn read_binary()->Option<Vec<u8>>{
-    let contents = fs::read("./to_decode/output.bin");
+pub fn read_binary(config: &Config) -> Option<Vec<u8>> {
+    let path = config.decode_input_dir.join("input.bin");
+    let contents = fs::read(&path);
     match contents {
         Ok(contents) => {
-            //println!("{:?}", contents);
+            println!("Reading file");
             Some(contents)
         }
         Err(e) => {
-            eprintln!("Error reading file ./to_decode/output.bin:\n{:?}", e);
+            eprintln!("Error reading file {}:\n{:?}", path.display(), e);
             None
         }
     }

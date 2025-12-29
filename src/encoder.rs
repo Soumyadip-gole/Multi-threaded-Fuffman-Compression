@@ -1,29 +1,32 @@
+use crate::config::Config;
 use crate::file_io::read;
-use std::collections::HashMap;
-use std::collections::BinaryHeap;
-use std::cmp::Reverse;
 use crate::sturcture::Node;
-pub fn encode() ->Option<HashMap<String,String>> {
-    let content:Option<String> = read();
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
+use std::collections::HashMap;
+
+pub fn encode(config: &Config) -> Option<HashMap<String, String>> {
+    println!("Encoding expanded code");
+    let content: Option<String> = read(config);
     match content {
-        Some(content) =>{
-            let freq=count_freq(&content);
+        Some(content) => {
+            let freq = count_freq(&content);
             let mut min_heap = BinaryHeap::new();
             for (key, value) in freq {
-                let node=Node::leaf(key.to_string(),value);
+                let node = Node::leaf(key.to_string(), value);
                 min_heap.push(Reverse(node));
             }
             ////println!(" min heap: {:?}", min_heap);
             while min_heap.len() > 1 {
-                let min1 :Node= min_heap.pop().unwrap().0;
+                let min1: Node = min_heap.pop().unwrap().0;
                 let min2 = min_heap.pop().unwrap().0;
                 let merged = Node::merge(min1, min2);
                 min_heap.push(Reverse(merged));
             }
             let huffman_tree = min_heap.pop().unwrap().0;
             ////println!("Huffman Tree: {:?}", huffman_tree);
-            let mut res:HashMap<String,String> = HashMap::new();
-            get_encoding(&huffman_tree, String::new() ,& mut res);
+            let mut res: HashMap<String, String> = HashMap::new();
+            get_encoding(&huffman_tree, String::new(), &mut res);
             ////println!("\n\n\n\n\n Huffman Encoding Table: {:?}", res);
             return Some(res);
         }
@@ -34,9 +37,8 @@ pub fn encode() ->Option<HashMap<String,String>> {
     }
 }
 
-
-pub fn count_freq(content:&String) -> HashMap<char, u128>{
-    let mut count:HashMap<char, u128> = HashMap::new();
+pub fn count_freq(content: &String) -> HashMap<char, u128> {
+    let mut count: HashMap<char, u128> = HashMap::new();
     for character in content.chars() {
         *count.entry(character).or_insert(0) += 1;
     }
@@ -44,9 +46,8 @@ pub fn count_freq(content:&String) -> HashMap<char, u128>{
     count
 }
 
-
-fn get_encoding(node:&Node, code:String, table: &mut HashMap<String, String>){
-    if node.is_leaf(){
+fn get_encoding(node: &Node, code: String, table: &mut HashMap<String, String>) {
+    if node.is_leaf() {
         table.insert(node.token(), code.clone());
     }
     let left = node.left();

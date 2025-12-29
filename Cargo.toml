@@ -5,5 +5,5 @@ edition = "2024"
 
 [dependencies]
 file = "0.1.1"
-serde = "1.0.228"
+serde = { version = "1.0.228", features = ["derive"] }
 toml = "0.9.10"

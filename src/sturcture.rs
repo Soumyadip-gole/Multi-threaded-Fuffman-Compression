@@ -21,7 +21,7 @@ impl Node {
     pub fn merge(left: Node, right: Node) -> Self {
         Self {
             freq: left.freq + right.freq,
-            token: left.token.clone()+&right.token,
+            token: left.token.clone() + &right.token,
             left: Some(Box::from(left)),
             right: Some(Box::from(right)),
         }
@@ -47,7 +47,6 @@ impl Node {
     //     self.freq
     // }
 }
-
 
 impl PartialOrd<Self> for Node {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
