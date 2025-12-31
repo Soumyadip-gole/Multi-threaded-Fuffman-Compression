@@ -1,8 +1,7 @@
 # 🗜️ Parallel Huffman Compressor (Rust)
 
-A **multi-threaded file compressor and decompressor** written in Rust, implementing **Huffman encoding/decoding** and a **custom thread pool** to process multiple files in parallel. 
-
-( Trying to do the treadpool currently single file - single thread :) 
+A **multi-threaded file compressor and decompressor** written in Rust.
+It implements **Huffman encoding/decoding** and uses Rayon to process **multiple files in parallel**.
 
 ---
 ## Working
@@ -10,106 +9,132 @@ A **multi-threaded file compressor and decompressor** written in Rust, implement
 This project has two modes:
 
 ### 1) Encode (compress)
-1. `main.rs` loads `config.toml` and asks you to choose **encode** or **decode**.
-2. In **encode** mode, it calls `compress::write_compressed(&config)`.
-3. `file_io::read(&config)` reads the input text file from:
-   - `encode_input_dir/input.txt`
-4. `encoder::encode(&config)`:
+1. `main.rs` asks you to choose **encode** or **decode**.
+2. In **encode** mode, it scans `./to_encode/` and processes every file in that folder in parallel.
+3. For each file, `encoder.rs`:
    - counts character frequencies,
-   - builds a Huffman tree using a min-heap,
-   - generates a Huffman encoding table (character -> bitstring).
-5. `compress::write_compressed(&config)` writes a binary output file to:
-   - `encoded_output_dir/output.bin`
+   - builds a Huffman tree (min-heap),
+   - generates an encoding table (symbol -> bitstring).
+4. `compress.rs` writes the compressed output into `./encoded_output/`:
+   - `{original_filename}_encoded.bin`
 
-The binary format is:
-- number of table entries (u32)
-- for each entry: key length (u8), key bytes, code length (u8), code bytes
-- original symbol count (u64)
-- encoded bitstream packed into bytes
+Binary format (what gets stored inside `*_encoded.bin`):
+- number of table entries (`u32`)
+- for each entry:
+  - key length (`u8`) + key bytes
+  - code length (`u8`) + code bytes
+- original symbol count (`u64`)
+- encoded bitstream (packed into bytes)
 
-It also writes a debug file to:
-- `encoded_output_dir/output_debug.bin` (human-readable info like table + bitstream)
+There’s also a debug file (optional / for inspection):
+- `{original_filename}_debug.bin`
 
 ### 2) Decode (decompress)
-1. In **decode** mode, `main.rs` calls `expand::write_expanded(&config)`.
-2. `decoder::decode(&config)` reads the encoded binary from:
-   - `decode_input_dir/input.bin`
-3. `decoder.rs` reconstructs the Huffman table (bitstring -> character).
-4. `expand.rs` reads the original symbol count + bitstream, then walks bits until the symbol count is reached.
-5. The final decoded text is written to:
-   - `decoded_output_dir/output.txt`
+1. In **decode** mode, it scans `./to_decode/` and processes every file in that folder in parallel.
+2. `decoder.rs` reads the binary format and reconstructs the Huffman table (bitstring -> symbol).
+3. `expand.rs` reads:
+   - the original symbol count
+   - the packed bitstream
+   then walks the bits until the symbol count is reached.
+4. Output is written to `./decoded_output/`:
+   - `{input_filename}_decoded.txt`
 
 ---
 ## File Structure
 
 ### Root
 - `Cargo.toml` / `Cargo.lock`: Rust package metadata + dependencies
-- `config.toml`: where input/output folders are configured
+- `config.toml`: folder config (currently not wired into the main encode/decode flow)
 - `README.md`: project description (this file)
 - `LICENSE`: license info
 
 ### Input / Output folders
 - `to_encode/`
-  - `input.txt` (text file you want to compress)
+  - put the text files you want to compress here
 - `encoded_output/`
-  - `output.bin` (compressed binary output)
-  - `output_debug.bin` (debug info about the encoding)
+  - output: `*_encoded.bin` (compressed data)
+  - output: `*_debug.bin` (debug info)
 - `to_decode/`
-  - `input.bin` (binary file you want to decompress; often copied from `encoded_output/output.bin`)
+  - put the `*_encoded.bin` files you want to decompress here
 - `decoded_output/`
-  - `output.txt` (final decompressed text)
+  - output: `*_decoded.txt`
 
 ### Source code (`src/`)
-- `main.rs`: CLI entry point; loads config and dispatches to encode/decode
-- `config.rs`: reads `config.toml` into a `Config` struct
-- `file_io.rs`: reads input files (text/binary) using config directory paths
+- `main.rs`: CLI entry point (encode/decode + parallel file processing)
+- `path_read.rs`: lists all files in a folder
+- `thread_pool.rs`: Rayon thread pool + parallel processing helper
+- `file_io.rs`: reads input files (text/binary)
 - `encoder.rs`: builds frequency map, Huffman tree, and encoding table
-- `compress.rs`: writes encoding table + encoded content into the compressed binary format
+- `compress.rs`: writes Huffman table + encoded content into the binary format
 - `decoder.rs`: reads the binary format and reconstructs the decoding table
 - `expand.rs`: expands the encoded bitstream back into the original text
-- `sturcture.rs`: defines the Huffman tree `Node` and heap ordering
+- `sturcture.rs`: Huffman tree `Node` + heap ordering (name is a typo but works)
 
 ---
 ## Usage
 
-### 1) Configure paths
-Edit `config.toml` to point to your folders:
-- `encode_input_dir` (contains `input.txt`)
-- `encoded_output_dir` (where `output.bin` and `output_debug.bin` will be written)
-- `decode_input_dir` (contains `input.bin`)
-- `decoded_output_dir` (where `output.txt` will be written)
+### 0) Build (download deps)
+Rust/Cargo will download everything automatically the first time you build.
 
-Note: the code currently expects these fixed filenames:
-- encode input: `input.txt`
-- decode input: `input.bin`
+For a quick build:
+```sh
+cargo build
+```
+
+### 1) Quick run (trial)
+Run directly with Cargo:
+```sh
+cargo run
+```
+
+It’ll ask you to type `encode` or `decode`.
 
 ### 2) Encode (compress)
-1. Put your text file at: `to_encode/input.txt` (or whatever `encode_input_dir` is set to).
-2. Run the program.
+1. Put files in: `to_encode/`
+2. Run the program (`cargo run` or the release binary).
 3. When prompted, type `encode`.
-4. Outputs:
-   - `encoded_output/output.bin` (compressed data)
-   - `encoded_output/output_debug.bin` (debug info)
+4. Outputs go to: `encoded_output/`
 
 ### 3) Decode (decompress)
-1. Copy/move `encoded_output/output.bin` to `to_decode/input.bin` (or whatever `decode_input_dir` is set to).
-2. Run the program.
+1. Copy/move the `*_encoded.bin` files from `encoded_output/` into: `to_decode/`
+2. Run the program (`cargo run` or the release binary).
 3. When prompted, type `decode`.
-4. Output:
-   - `decoded_output/output.txt` (decompressed text)
+4. Outputs go to: `decoded_output/`
+
+### 4) Release build (final)
+If you want the fast/optimized build:
+```sh
+cargo build --release
+```
+
+Then run:
+```sh
+./target/release/huffman-encoding
+```
 
 ---
 ## Stats
 
-### Encoding 
-- Input text size: ~100 mb
-- Encoded binary size: ~75 mb
+### Encoding
+- Input text size: ~800 mb (100 mb * 8 files)
+- Encoded binary size: ~600 mb
 - Compression ratio: ~25%
-- encoding time : ~103.890139684s (pc on medium load + lot of debugging info written + extra debugging file )
+- Encoding time: ~7.8s (almost no load + 8 threads for 8 files)
+
+### Decoding
+- Using the previous compressed data for decompression
+- Time taken: ~22.3s (same favourable conditions as above)
+
+> Small note: this project can feel **fast** mainly because it’s a **simple Huffman implementation** and it currently focuses on **text files**.
+> But the compression ratio is also **not as good** as mature tools like gzip/zstd — that’s the tradeoff.
 
 ---
 
 This project was built mainly to learn Rust, so it’s not meant to compete with tools like gzip or zlib.
-It hasn’t been optimized for speed or compression ratio—it's just a Huffman coding implementation in Rust.
+It hasn’t been optimized for speed or compression ratio — it’s just a Huffman coding implementation in Rust.
+
+There’s still a lot of optimization potential (both algorithmic and code-level). One of the main bottlenecks right now is file I/O:
+- the encoder currently reads the whole file into memory,
+- and the compressed writer ends up reading the input again when producing the final binary output.
 
 Feel free to explore, modify, and experiment with the code!
