@@ -1,8 +1,9 @@
 use crate::compress::write_compressed;
 use crate::expand::write_expanded;
+use crate::path_read::reader;
+use crate::thread_pool::process_files_parallel;
 use std::io;
 use std::time::Instant;
-
 
 mod compress;
 mod config;
@@ -10,10 +11,12 @@ mod decoder;
 mod encoder;
 mod expand;
 mod file_io;
+mod path_read;
 mod sturcture;
+mod thread_pool;
 
 fn main() {
-    let config = config::load();
+    let _config = config::load();
     let mode = loop {
         let mut input = String::new();
 
@@ -34,11 +37,15 @@ fn main() {
     println!("Selected mode: {}", mode);
     let start = Instant::now();
     if mode == "encode" {
-        println!("Starting compression...");
-        write_compressed(&config);
+        println!("Encoding...");
+        thread_pool::init_thread_pool(8);
+        let files = reader("./to_encode".to_string()).unwrap();
+        process_files_parallel(files, write_compressed);
     } else {
-        println!("Starting decompression...");
-        write_expanded(&config);
+        println!("Decoding...");
+        thread_pool::init_thread_pool(8);
+        let files = reader("./to_decode".to_string()).unwrap();
+        process_files_parallel(files, write_expanded);
     }
 
     let duration = start.elapsed();

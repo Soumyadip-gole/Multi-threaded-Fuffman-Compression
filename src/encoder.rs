@@ -1,13 +1,12 @@
-use crate::config::Config;
 use crate::file_io::read;
 use crate::sturcture::Node;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
 
-pub fn encode(config: &Config) -> Option<HashMap<String, String>> {
+pub fn encode(filename: String) -> Option<HashMap<String, String>> {
     println!("Encoding expanded code");
-    let content: Option<String> = read(config);
+    let content: Option<String> = read(filename);
     match content {
         Some(content) => {
             let freq = count_freq(&content);
