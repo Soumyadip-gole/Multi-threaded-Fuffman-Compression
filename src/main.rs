@@ -12,11 +12,19 @@ mod encoder;
 mod expand;
 mod file_io;
 mod path_read;
-mod sturcture;
+mod structure;
 mod thread_pool;
 
 fn main() {
-    let _config = config::load();
+    let config = config::load();
+    println!("Enter number of threads:");
+    let mut input = String::new();
+
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read input");
+
+    let threads: usize = input.trim().parse().expect("Please enter a valid number");
     let mode = loop {
         let mut input = String::new();
 
@@ -33,19 +41,22 @@ fn main() {
             _ => println!("Invalid input. Please type 'encode' or 'decode'.\n"),
         }
     };
-
     println!("Selected mode: {}", mode);
     let start = Instant::now();
     if mode == "encode" {
         println!("Encoding...");
-        thread_pool::init_thread_pool(8);
-        let files = reader("./to_encode".to_string()).unwrap();
-        process_files_parallel(files, write_compressed);
+        thread_pool::init_thread_pool(threads);
+        let files = reader(config.encode_input_dir.to_string_lossy().into_owned()).unwrap();
+        process_files_parallel(files, |file| {
+            write_compressed(file, &config.encode_input_dir, &config.encoded_output_dir);
+        });
     } else {
         println!("Decoding...");
-        thread_pool::init_thread_pool(8);
-        let files = reader("./to_decode".to_string()).unwrap();
-        process_files_parallel(files, write_expanded);
+        thread_pool::init_thread_pool(threads);
+        let files = reader(config.decode_input_dir.to_string_lossy().into_owned()).unwrap();
+        process_files_parallel(files, |file| {
+            write_expanded(file, &config.decode_input_dir, &config.decoded_output_dir);
+        });
     }
 
     let duration = start.elapsed();

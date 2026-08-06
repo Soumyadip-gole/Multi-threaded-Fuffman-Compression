@@ -3,21 +3,17 @@ use crate::file_io::read;
 use std::io::{BufWriter, Write};
 
 use std::fs::{self, File};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-pub fn write_compressed(filename: String) {
-    let encoding_table = encode(filename.clone()).unwrap();
-    let input = read(filename.clone()).unwrap();
-    fs::create_dir_all("encoded_output").unwrap();
+pub fn write_compressed(filename: String, input_dir: &Path, output_dir: &Path) {
+    let input = read(input_dir, &filename).unwrap();
+    let encoding_table = encode(&input).unwrap();
+    fs::create_dir_all(output_dir).unwrap();
 
-    let mut compressed_path = PathBuf::from("encoded_output");
+    let mut compressed_path = PathBuf::from(output_dir);
     compressed_path.push(format!("{}_encoded.bin", filename));
 
-    let mut debug_path = PathBuf::from("encoded_output");
-    debug_path.push(format!("{}_debug.bin", filename));
-
     let file = File::create(&compressed_path).unwrap();
-    let file_test = File::create(&debug_path).unwrap();
 
     let mut writer = BufWriter::new(file);
 

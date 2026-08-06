@@ -1,9 +1,10 @@
 use crate::decoder::decode;
 use std::fs;
+use std::path::{Path, PathBuf};
 
-pub(crate) fn write_expanded(filename: String) {
+pub(crate) fn write_expanded(filename: String, input_dir: &Path, output_dir: &Path) {
     println!("Writing expanded code for: {}", filename);
-    let data = decode(filename.clone()).unwrap();
+    let data = decode(input_dir, &filename).unwrap();
     let (mapping, mut vec) = data;
     let len = u64::from_be_bytes(vec[0..8].try_into().unwrap());
     //println!("{:?}", len);
@@ -33,12 +34,13 @@ pub(crate) fn write_expanded(filename: String) {
             }
         }
     }
-    fs::create_dir_all("./decoded_output").unwrap();
+    fs::create_dir_all(output_dir).unwrap();
 
-    let out_path = format!("./decoded_output/{}_decoded.txt", filename);
+    let mut out_path = PathBuf::from(output_dir);
+    out_path.push(format!("{}_decoded.txt", filename));
     if let Err(e) = std::fs::write(&out_path, &text) {
         eprintln!("Error writing expanded output: {}", e);
     } else {
-        println!("Decoded output written to: {}", out_path);
+        println!("Decoded output written to: {}", out_path.display());
     }
 }

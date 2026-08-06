@@ -1,9 +1,10 @@
 use crate::file_io::read_binary;
 use std::collections::HashMap;
+use std::path::Path;
 
-pub fn decode(filename: String) -> Option<(HashMap<String, String>, Vec<u8>)> {
+pub fn decode(input_dir: &Path, filename: &str) -> Option<(HashMap<String, String>, Vec<u8>)> {
     println!("Decoding expanded code");
-    let contents = read_binary(filename);
+    let contents = read_binary(input_dir, filename);
     match contents {
         Some(bytes) => {
             let mut map: HashMap<String, String> = HashMap::new();

@@ -1,42 +1,36 @@
-use crate::file_io::read;
-use crate::sturcture::Node;
+use crate::structure::Node;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
 
-pub fn encode(filename: String) -> Option<HashMap<String, String>> {
+pub fn encode(content: &str) -> Option<HashMap<String, String>> {
     println!("Encoding expanded code");
-    let content: Option<String> = read(filename);
-    match content {
-        Some(content) => {
-            let freq = count_freq(&content);
-            let mut min_heap = BinaryHeap::new();
-            for (key, value) in freq {
-                let node = Node::leaf(key.to_string(), value);
-                min_heap.push(Reverse(node));
-            }
-            ////println!(" min heap: {:?}", min_heap);
-            while min_heap.len() > 1 {
-                let min1: Node = min_heap.pop().unwrap().0;
-                let min2 = min_heap.pop().unwrap().0;
-                let merged = Node::merge(min1, min2);
-                min_heap.push(Reverse(merged));
-            }
-            let huffman_tree = min_heap.pop().unwrap().0;
-            ////println!("Huffman Tree: {:?}", huffman_tree);
-            let mut res: HashMap<String, String> = HashMap::new();
-            get_encoding(&huffman_tree, String::new(), &mut res);
-            ////println!("\n\n\n\n\n Huffman Encoding Table: {:?}", res);
-            return Some(res);
-        }
-        None => {
-            eprintln!("No content to encode (failed to read ./to_encode/test.txt).");
-            return None;
-        }
+    if content.is_empty() {
+        return Some(HashMap::new());
     }
+
+    let freq = count_freq(content);
+    let mut min_heap = BinaryHeap::new();
+    for (key, value) in freq {
+        let node = Node::leaf(key.to_string(), value);
+        min_heap.push(Reverse(node));
+    }
+    ////println!(" min heap: {:?}", min_heap);
+    while min_heap.len() > 1 {
+        let min1: Node = min_heap.pop().unwrap().0;
+        let min2 = min_heap.pop().unwrap().0;
+        let merged = Node::merge(min1, min2);
+        min_heap.push(Reverse(merged));
+    }
+    let huffman_tree = min_heap.pop().unwrap().0;
+    ////println!("Huffman Tree: {:?}", huffman_tree);
+    let mut res: HashMap<String, String> = HashMap::new();
+    get_encoding(&huffman_tree, String::new(), &mut res);
+    ////println!("\n\n\n\n\n Huffman Encoding Table: {:?}", res);
+    Some(res)
 }
 
-pub fn count_freq(content: &String) -> HashMap<char, u128> {
+pub fn count_freq(content: &str) -> HashMap<char, u128> {
     let mut count: HashMap<char, u128> = HashMap::new();
     for character in content.chars() {
         *count.entry(character).or_insert(0) += 1;

@@ -1,4 +1,4 @@
-# 🗜️ Parallel Huffman Compressor (Rust)
+# ZIPrs (Parallel Huffman Encoder/Decoder in Rust)
 
 A **multi-threaded file compressor and decompressor** written in Rust.
 It implements **Huffman encoding/decoding** and uses Rayon to process **multiple files in parallel**.
@@ -9,13 +9,13 @@ It implements **Huffman encoding/decoding** and uses Rayon to process **multiple
 This project has two modes:
 
 ### 1) Encode (compress)
-1. `main.rs` asks you to choose **encode** or **decode**.
-2. In **encode** mode, it scans `./to_encode/` and processes every file in that folder in parallel.
+1. `main.rs` asks for **number of threads** and then asks you to choose **encode** or **decode**.
+2. In **encode** mode, it scans the input directory from `config.toml` (`encode_input_dir`) and processes every file in that folder in parallel.
 3. For each file, `encoder.rs`:
    - counts character frequencies,
    - builds a Huffman tree (min-heap),
    - generates an encoding table (symbol -> bitstring).
-4. `compress.rs` writes the compressed output into `./encoded_output/`:
+4. `compress.rs` writes the compressed output into the directory from `config.toml` (`encoded_output_dir`):
    - `{original_filename}_encoded.bin`
 
 Binary format (what gets stored inside `*_encoded.bin`):
@@ -26,17 +26,14 @@ Binary format (what gets stored inside `*_encoded.bin`):
 - original symbol count (`u64`)
 - encoded bitstream (packed into bytes)
 
-There’s also a debug file (optional / for inspection):
-- `{original_filename}_debug.bin`
-
 ### 2) Decode (decompress)
-1. In **decode** mode, it scans `./to_decode/` and processes every file in that folder in parallel.
+1. In **decode** mode, it scans the input directory from `config.toml` (`decode_input_dir`) and processes every file in that folder in parallel.
 2. `decoder.rs` reads the binary format and reconstructs the Huffman table (bitstring -> symbol).
 3. `expand.rs` reads:
    - the original symbol count
    - the packed bitstream
    then walks the bits until the symbol count is reached.
-4. Output is written to `./decoded_output/`:
+4. Output is written to the directory from `config.toml` (`decoded_output_dir`):
    - `{input_filename}_decoded.txt`
 
 ---
@@ -44,7 +41,7 @@ There’s also a debug file (optional / for inspection):
 
 ### Root
 - `Cargo.toml` / `Cargo.lock`: Rust package metadata + dependencies
-- `config.toml`: folder config (currently not wired into the main encode/decode flow)
+- `config.toml`: folder config used by encode/decode input and output flow
 - `README.md`: project description (this file)
 - `LICENSE`: license info
 
@@ -53,7 +50,6 @@ There’s also a debug file (optional / for inspection):
   - put the text files you want to compress here
 - `encoded_output/`
   - output: `*_encoded.bin` (compressed data)
-  - output: `*_debug.bin` (debug info)
 - `to_decode/`
   - put the `*_encoded.bin` files you want to decompress here
 - `decoded_output/`
@@ -68,7 +64,7 @@ There’s also a debug file (optional / for inspection):
 - `compress.rs`: writes Huffman table + encoded content into the binary format
 - `decoder.rs`: reads the binary format and reconstructs the decoding table
 - `expand.rs`: expands the encoded bitstream back into the original text
-- `sturcture.rs`: Huffman tree `Node` + heap ordering (name is a typo but works)
+- `structure.rs`: Huffman tree `Node` + heap ordering (name is a typo but works)
 
 ---
 ## Usage
@@ -81,25 +77,35 @@ For a quick build:
 cargo build
 ```
 
-### 1) Quick run (trial)
-Run directly with Cargo:
+### 1) Run (recommended)
+Run the optimized build directly with Cargo:
 ```sh
-cargo run
+cargo run --release
 ```
 
-It’ll ask you to type `encode` or `decode`.
+It will ask for:
+- number of threads
+- mode (`encode` or `decode`)
+
+You can also build once and run the binary directly:
+```sh
+cargo build --release
+./target/release/huffman-encoding
+```
 
 ### 2) Encode (compress)
 1. Put files in: `to_encode/`
-2. Run the program (`cargo run` or the release binary).
-3. When prompted, type `encode`.
-4. Outputs go to: `encoded_output/`
+2. Run the program (`cargo run --release` or the release binary).
+3. Enter the number of threads when prompted.
+4. When prompted, type `encode`.
+5. Outputs go to the path configured by `encoded_output_dir`.
 
 ### 3) Decode (decompress)
 1. Copy/move the `*_encoded.bin` files from `encoded_output/` into: `to_decode/`
-2. Run the program (`cargo run` or the release binary).
-3. When prompted, type `decode`.
-4. Outputs go to: `decoded_output/`
+2. Run the program (`cargo run --release` or the release binary).
+3. Enter the number of threads when prompted.
+4. When prompted, type `decode`.
+5. Outputs go to the path configured by `decoded_output_dir`.
 
 ### 4) Release build (final)
 If you want the fast/optimized build:
@@ -114,16 +120,27 @@ Then run:
 
 ---
 ## Stats
+- Example run (release build, current dataset):
+- Input size: 8 files x 500 MB = 4.0 GB total
+- Compressed size: ~2.5 GB total
 
 ### Encoding
-- Input text size: ~800 mb (100 mb * 8 files)
-- Encoded binary size: ~600 mb
-- Compression ratio: ~25%
-- Encoding time: ~7.8s (almost no load + 8 threads for 8 files)
+- Per-file compressed size: ~312.5 MB (roughly ~300 MB)
+- Overall size reduction: ~37.5%
+- 1 thread: ~191.88s
+- 8 threads: ~38.87s
 
 ### Decoding
-- Using the previous compressed data for decompression
-- Time taken: ~22.3s (same favourable conditions as above)
+- Example run (release build, current dataset):
+- 1 thread: ~500.56s
+- 8 threads: ~99.75s
+
+#### Run Screenshots
+Decode run (8 threads):
+![Decode run output](decode_image.png)
+
+Encode run (8 threads):
+![Encode run output](encode_image.png)
 
 > Small note: this project can feel **fast** mainly because it’s a **simple Huffman implementation** and it currently focuses on **text files**.
 > But the compression ratio is also **not as good** as mature tools like gzip/zstd — that’s the tradeoff.
@@ -133,8 +150,9 @@ Then run:
 This project was built mainly to learn Rust, so it’s not meant to compete with tools like gzip or zlib.
 It hasn’t been optimized for speed or compression ratio — it’s just a Huffman coding implementation in Rust.
 
-There’s still a lot of optimization potential (both algorithmic and code-level). One of the main bottlenecks right now is file I/O:
-- the encoder currently reads the whole file into memory,
-- and the compressed writer ends up reading the input again when producing the final binary output.
+Recent important updates:
+- encode/decode directories are now driven by `config.toml`
+- runtime asks for user-defined thread count
+- encode path reads each input file once per file
 
 Feel free to explore, modify, and experiment with the code!
